@@ -9,15 +9,16 @@ var keys = {}
 
 /**
 * @method trace_caller
+* @param signature {String}
 * @return {String}
 */
-function trace_caller()
+function trace_caller(signature)
 {
 	try{throw new Error()}
 	catch(ex)
 	{
 		var stack = ex.stack
-		var onepathLineStart = stack.indexOf('at onepath ')
+		var onepathLineStart = stack.indexOf(signature)
 		var onepathLineEnd = stack.indexOf('\n', onepathLineStart)
 		var callerLineStart = stack.indexOf('at ', onepathLineEnd)
 		var callerLineEnd = stack.indexOf('\n', callerLineStart)
@@ -37,7 +38,7 @@ function onepath(pathQuery)
 	// Relative to caller
 	if (pathQuery[0] === '~')
 	{
-		pathQuery = path.dirname(trace_caller()) + (pathQuery[1] === '/' ? '' : '/')  + pathQuery.slice(1)
+		pathQuery = path.dirname(trace_caller('at onepath ')) + (pathQuery[1] === '/' ? '' : '/')  + pathQuery.slice(1)
 	}
 
 	// Insert enviroment paths
@@ -74,6 +75,13 @@ function onepath(pathQuery)
 */
 onepath.require = function(pathQuery)
 {
+	pathQuery = ('' + pathQuery).trim()
+
+	if (pathQuery[0] === '~')
+	{
+		pathQuery = path.dirname(trace_caller('onepath.require ')) + (pathQuery[1] === '/' ? '' : '/')  + pathQuery.slice(1)
+	}
+
 	return require(onepath(pathQuery))
 }
 
@@ -84,6 +92,13 @@ onepath.require = function(pathQuery)
 */
 onepath.set = function(key, pathQuery)
 {
+	pathQuery = ('' + pathQuery).trim()
+
+	if (pathQuery[0] === '~')
+	{
+		pathQuery = path.dirname(trace_caller('onepath.set ')) + (pathQuery[1] === '/' ? '' : '/')  + pathQuery.slice(1)
+	}
+
 	keys[key] = onepath(pathQuery)
 }
 

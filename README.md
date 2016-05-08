@@ -66,7 +66,7 @@ var relativeModule = onepath.require('~/relative-module.js')
 
 ```
 var path = require('path')
-var CONFIG_DIR = process.NODE_ENV.CONFIG_DIR
+var CONFIG_DIR = process.env.CONFIG_DIR
 var knex = require(path.join(CONFIG_DIR, 'knexfile.js'))
 ```
 
