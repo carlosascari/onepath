@@ -10,10 +10,10 @@ npm i onepath --save
 
 ## Modifiers
 
-- `.` A dot prefix is  a path relative to the working directory e.g `process.cwd()`
-- `~` A tilde prefix is a path relative to the file that called the onepath utility
-- `{KEY}` Are is a path that was set with `onepath.set`
-- `{{ENV}}` Are is a paht that was set as enviroment variable
+- `.` A dot prefix is a path relative to the working directory e.g `process.cwd()`
+- `~` A tilde prefix is a path relative to the file that called the [onepath]() utility
+- `{KEY}` Is a path that was set with `onepath.set`
+- `{{ENV}}` Is a path that was set as an enviroment variable
 
 ## API
 
@@ -24,7 +24,7 @@ Returns a resolved path.
 Require a module using onepath.
 
 **onepath.set**(*String* key, *String* pathQuery)
-Set a path key that can be included in single braces
+Set a path key that can be included with single braces
 example: 
 
 	onepath.set('VIEW_FOLDER', './lib/views')
