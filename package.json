@@ -1,0 +1,16 @@
+{
+  "name": "onepath",
+  "version": "1.0.0",
+  "description": "A sane path resolution utility",
+  "main": "index.js",
+  "scripts": {
+    "test": "clear && mocha --watch"
+  },
+  "keywords": ["onepath", "path", "require", "relative path", "relative", "sane"],
+  "author": "Ascari <carlos.ascari.x@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^2.4.5",
+    "should": "^8.3.1"
+  }
+}
