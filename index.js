@@ -6,6 +6,7 @@
 module.exports = onepath
 var path = require('path')
 var keys = {}
+var trace = {}
 
 /**
 * @method trace_caller
@@ -14,16 +15,14 @@ var keys = {}
 */
 function trace_caller(signature)
 {
-	try{throw new Error()}
-	catch(ex)
-	{
-		var stack = ex.stack
-		var onepathLineStart = stack.indexOf(signature)
-		var onepathLineEnd = stack.indexOf('\n', onepathLineStart)
-		var callerLineStart = stack.indexOf('at ', onepathLineEnd)
-		var callerLineEnd = stack.indexOf('\n', callerLineStart)
-		return stack.substring(callerLineStart, callerLineEnd).match(/\((.*?)\:.*\)/)[1]
-	}
+	Error.captureStackTrace(trace)
+	var stack = trace.stack
+	trace.stack = undefined
+	var onepathLineStart = stack.indexOf('at onepath ')
+	var onepathLineEnd = stack.indexOf('\n', onepathLineStart)
+	var callerLineStart = stack.indexOf('at ', onepathLineEnd)
+	var callerLineEnd = stack.indexOf('\n', callerLineStart)
+	return stack.substring(callerLineStart, callerLineEnd).match(/\((.*?)\:.*\)/)[1]
 }
 
 /**
