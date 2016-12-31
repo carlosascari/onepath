@@ -1,4 +1,4 @@
-var onepath = require('..')
+var onepath = require('..')();
 var should = require('should')
 
 var CWD = process.cwd().replace(/\/$/, '') // remove trailing slash
@@ -83,12 +83,6 @@ describe('#test.js', function(){
 			should(onepath('{A}')).equal('/x/y/z')
 			onepath.unset('A')
 			should(onepath('{A}')).equal('')
-		})
-	})
-	describe('onepath.require(PATH)', function(){
-		it('require onepath module', function(){
-			should(onepath.require('~')).equal(onepath)
-			should(onepath.require('.')).equal(onepath)
 		})
 	})
 })

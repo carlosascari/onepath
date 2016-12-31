@@ -1,111 +1,140 @@
 /**
-* Sane path resolution utility
+* Provides a sane path resolution utility.
 *
 * @module onepath
 */
-module.exports = onepath
-var path = require('path')
-var keys = {}
-var trace = {}
+const path = require('path');
+const fs = require('fs');
+
+// Patterns used to parse enviroment and custom variables from a path query
+const REG_ENV_VAR = /{{(.*?)}}/g;  // e.g: {{EnvVariableName}/somefile.js
+const REG_CUSTOM_VAR = /{(.*?)}/g; // e.g: {CustomVariableName}/somefile.js
 
 /**
-* @method trace_caller
-* @param signature {String}
-* @return {String}
+* Hash of key to pathQuery Strings, used to share know paths across instances
+* @private
 */
-function trace_caller(signature)
-{
-	Error.captureStackTrace(trace)
-	var stack = trace.stack
-	trace.stack = undefined
-	var onepathLineStart = stack.indexOf('at onepath ')
-	var onepathLineEnd = stack.indexOf('\n', onepathLineStart)
-	var callerLineStart = stack.indexOf('at ', onepathLineEnd)
-	var callerLineEnd = stack.indexOf('\n', callerLineStart)
-	return stack.substring(callerLineStart, callerLineEnd).match(/\((.*?)\:.*\)/)[1]
-}
+const keys = {};
+
+// So to load config only once
+let configLoaded = false;
 
 /**
-* @method onepath
-* @param pathQuery {String}
-* @return {String}
+* Look for a `./onepath.json`, if it exists load its keys
+* @private
 */
-function onepath(pathQuery)
-{
-	pathQuery = ('' + pathQuery).trim()
-	
-	// Relative to caller
-	if (pathQuery[0] === '~')
-	{
-		pathQuery = path.dirname(trace_caller('at onepath ')) + (pathQuery[1] === '/' ? '' : '/')  + pathQuery.slice(1)
-	}
-
-	// Insert enviroment paths
-	if (pathQuery.indexOf('{{') !== -1)
-	{
-		pathQuery = pathQuery.replace(
-			/{{(.*?)}}/g,
-			function(match, envKey)
-			{
-				return process.env[envKey] || ''
-			}
-		)
-	}
-
-	// Insert stored paths
-	if (pathQuery.indexOf('{') !== -1)
-	{
-		pathQuery = pathQuery.replace(
-			/{(.*?)}/g,
-			function(match, key)
-			{
-				return keys[key] || ''
-			}
-		)
-	}
-
-	return pathQuery ? path.resolve(pathQuery) : ''
-}
+const loadConfig = (pathQuery) => {
+  try {
+    const json = fs.readFileSync(onepath(pathQuery), 'utf8');
+    try {
+      const config = JSON.parse(json);
+      if (config && typeof config === 'object' && !Array.isArray(config)) {
+        Object.keys(config).forEach(key => {
+          if (config[key] && typeof config[key] === 'string') {
+            keys[key] = config[key];
+          }
+        });
+      } else {
+        console.warn('Found invalid config file: ./onepath.json');
+      }
+    } catch(e) {}
+  } catch(e) {}
+};
 
 /**
-* @method require
-* @param pathQuery {String}
-* @return {Mixed}
+* Uses `Error` to trace a calling function
+* @private
+* @return {Array} of `CallSite` instances. (methods: #getFileName(), #getLineNumber(), etc)
 */
-onepath.require = function(pathQuery)
-{
-	pathQuery = ('' + pathQuery).trim()
+function getStack() {
+  // Save original Error.prepareStackTrace
+  const origPrepareStackTrace = Error.prepareStackTrace;
 
-	if (pathQuery[0] === '~')
-	{
-		pathQuery = path.dirname(trace_caller('onepath.require ')) + (pathQuery[1] === '/' ? '' : '/')  + pathQuery.slice(1)
-	}
+  // Override with function that just returns `stack`
+  Error.prepareStackTrace = function (_, stack) { return stack; };
 
-	return require(onepath(pathQuery))
+  // Create a new `Error`, which automatically gets `stack`
+  const error = new Error();
+
+  // Evaluate `error.stack`, which calls our new `Error.prepareStackTrace`
+  const stack = error.stack;
+
+  // Restore original `Error.prepareStackTrace`
+  Error.prepareStackTrace = origPrepareStackTrace;
+
+  // Remove this caller from stack
+  stack.shift();
+
+  return stack;
 }
 
-/**
-* @method set
-* @param key {String}
-* @param pathQuery {String}
-*/
-onepath.set = function(key, pathQuery)
-{
-	pathQuery = ('' + pathQuery).trim()
+// Export a function that needs to be executed in order call `process.cwd`
+module.exports = () => {
+  // Get callers' filename. Index zero SHOULD be this function/caller.
+  const _filename = getStack()[1].getFileName();
 
-	if (pathQuery[0] === '~')
-	{
-		pathQuery = path.dirname(trace_caller('onepath.set ')) + (pathQuery[1] === '/' ? '' : '/')  + pathQuery.slice(1)
-	}
+  // Load config once
+  if (!configLoaded) {
+    loadConfig('./onepath.json');
+    configLoaded = true;
+  }
 
-	keys[key] = onepath(pathQuery)
-}
+  /**
+  * A sane path resolution utility
+  * @param pathQuery {String}
+  * @return {String}
+  */
+  const onepath = (pathQuery) => {  
 
-/**
-* @method unset
-* @param key {String}
-*/
-onepath.unset = function(key)
-{
-	keys[key] = ''
-}
+    pathQuery = typeof pathQuery === 'string' ? pathQuery.trim() : '';
+
+    // Relative
+    if (pathQuery[0] === '~') {
+      pathQuery =  `${path.dirname(_filename)}${pathQuery[1] === '/' ? '' : '/'}${pathQuery.slice(1)}`;
+    }
+
+    // Enviroment Variable
+    if (pathQuery.indexOf('{{') !== -1) {
+      pathQuery = pathQuery.replace(REG_ENV_VAR, (match, envKey) => onepath(process.env[envKey]) || '');
+    }
+
+    // Custom Variable
+    if (pathQuery.indexOf('{') !== -1) {
+      pathQuery = pathQuery.replace(REG_CUSTOM_VAR, (match, key) => onepath(keys[key]) || '');
+    }
+
+    return pathQuery ? path.resolve(pathQuery) : '';
+  };
+
+  /**
+  * @method require
+  * @param pathQuery {String}
+  * @return {Mixed}
+  */
+  onepath.require = (pathQuery) => {
+    pathQuery = ('' + pathQuery).trim();
+    console.log('req', onepath(pathQuery))
+    return require(onepath(pathQuery));
+  }
+
+  /**
+  * @method set
+  * @param key {String}
+  * @param pathQuery {String}
+  */
+  onepath.set = (key, pathQuery) => {
+    pathQuery = ('' + pathQuery).trim();
+    keys[key] = pathQuery;
+  };
+
+  /**
+  * @method unset
+  * @param key {String}
+  */
+  onepath.unset = (key) => {
+    keys[key] = '';
+  };
+
+  // expose initialized utility
+  return onepath;
+};
