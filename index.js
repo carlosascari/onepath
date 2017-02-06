@@ -135,6 +135,26 @@ module.exports = () => {
     keys[key] = '';
   };
 
+  // Expose path methods, since `path` is already required here.
+  // @todo: Proxy methods so paths handled can interpert (~) 
+  // relative paths.
+  onepath.basename = path.basename.bind(path);
+  onepath.delimiter = path.delimiter;
+  onepath.dirname = path.dirname.bind(path);
+  onepath.extname = path.extname.bind(path);
+  onepath.format = path.format.bind(path);
+  onepath.isAbsolute = path.isAbsolute.bind(path);
+  // @todo: isRelative for (~)
+  onepath.join = path.join.bind(path);
+  onepath.normalize = path.normalize.bind(path);
+  onepath.parse = path.parse.bind(path);
+  onepath.posix = path.posix;
+  onepath.normalize = path.normalize.bind(path);
+  onepath.relative = path.relative.bind(path);
+  onepath.resolve = path.resolve.bind(path);
+  onepath.sep = path.sep;
+  onepath.win32 = path.win32;
+
   // expose initialized utility
   return onepath;
 };
