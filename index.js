@@ -113,7 +113,6 @@ module.exports = () => {
   */
   onepath.require = (pathQuery) => {
     pathQuery = ('' + pathQuery).trim();
-    console.log('req', onepath(pathQuery))
     return require(onepath(pathQuery));
   }
 
